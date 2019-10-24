@@ -1,48 +1,7 @@
 require 'rails_helper'
 
 describe ContactsController do
-  describe "guest access" do
-    describe "GET #new" do
-      it "requires login" do
-        get :new
-        expect(response).to redirect_to login_url
-      end
-    end
-    describe "GET #edit" do
-      it "requires login" do
-        contact = create(:contact)
-        get :edit, id: contact
-        expect(response).to redirect_to login_url
-      end
-    end
-    describe "POST #create" do
-      it "requires login" do
-        post :create, id: create(:contact),
-          contact: attributes_for(:contact)
-        expect(response).to redirect_to login_url
-      end
-    end
-    describe "POST #update" do
-      it "requires login" do
-        post :update, id: create(:contact),
-          contact: attributes_for(:contact)
-        expect(response).to redirect_to login_url
-      end
-    end
-    describe "DELETE #destroy" do
-      it "requires login" do
-        post :destroy, id: create(:contact)
-        expect(response).to redirect_to login_url
-      end
-    end
-  end
-
-  describe "administrator access" do
-    before :each do
-      user = create(:admin)
-      session[:user_id] = user.id
-    end
-
+  shared_examples "public access to contacts" do
     describe 'GET #index' do
       context 'with params[:letter]' do
         it "populates an array of contacts starting with the letter" do
@@ -85,7 +44,9 @@ describe ContactsController do
         expect(response).to render_template :show
       end
     end
+  end
 
+  shared_examples "full access to contacts" do
     describe 'GET #new' do
       it "assigns a new Contact to @contact" do
         get :new
@@ -211,6 +172,59 @@ describe ContactsController do
       it "redirects to users#index" do
         delete :destroy, id: @contact
         expect(response).to redirect_to contacts_url
+      end
+    end
+  end
+
+  describe "administrator access to contacts" do
+    before :each do
+      set_user_session(create(:admin))
+    end
+    it_behaves_like "public access to contacts"
+    it_behaves_like "full access to contacts"
+  end
+
+  describe "user access to contacts" do
+    before :each do
+      set_user_session(create(:user))
+    end
+    it_behaves_like "public access to contacts"
+    it_behaves_like "full access to contacts"
+  end
+
+  describe "guest access to contacts" do
+    it_behaves_like "public access to contacts"
+    describe "GET #new" do
+      it "requires login" do
+        get :new
+        expect(response).to require_login
+      end
+    end
+    describe "GET #edit" do
+      it "requires login" do
+        contact = create(:contact)
+        get :edit, id: contact
+        expect(response).to require_login
+      end
+    end
+    describe "POST #create" do
+      it "requires login" do
+        post :create, id: create(:contact),
+          contact: attributes_for(:contact)
+        expect(response).to require_login
+      end
+    end
+    describe "POST #update" do
+      it "requires login" do
+        post :update, id: create(:contact),
+          contact: attributes_for(:contact)
+        expect(response).to require_login
+      end
+    end
+    describe "DELETE #destroy" do
+      it "requires login" do
+        post :destroy, id: create(:contact)
+        expect(response).to require_login
       end
     end
   end
